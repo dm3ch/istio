@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"google.golang.org/grpc/metadata"
@@ -47,6 +48,8 @@ type KubeJWTAuthenticator struct {
 	kubeClient kubernetes.Interface
 	// Primary cluster ID
 	clusterID cluster.ID
+	// Primary cluster alisases
+	clusterAliases []cluster.ID
 
 	// remote cluster kubeClient getter
 	remoteKubeClientGetter RemoteKubeClientGetter
@@ -59,12 +62,14 @@ func NewKubeJWTAuthenticator(
 	meshHolder mesh.Holder,
 	client kubernetes.Interface,
 	clusterID cluster.ID,
+	clusterAliases []cluster.ID,
 	remoteKubeClientGetter RemoteKubeClientGetter,
 ) *KubeJWTAuthenticator {
 	return &KubeJWTAuthenticator{
 		meshHolder:             meshHolder,
 		kubeClient:             client,
 		clusterID:              clusterID,
+		clusterAliases:         clusterAliases,
 		remoteKubeClientGetter: remoteKubeClientGetter,
 	}
 }
@@ -135,9 +140,9 @@ func (a *KubeJWTAuthenticator) authenticate(targetJWT string, clusterID cluster.
 }
 
 func (a *KubeJWTAuthenticator) getKubeClient(clusterID cluster.ID) kubernetes.Interface {
-	// first match local/primary cluster
+	// first match local/primary cluster and it's aliases
 	// or if clusterID is not sent (we assume that its a single cluster)
-	if a.clusterID == clusterID || clusterID == "" {
+	if a.clusterID == clusterID || slices.Contains(a.clusterAliases, clusterID) || clusterID == "" {
 		return a.kubeClient
 	}
 

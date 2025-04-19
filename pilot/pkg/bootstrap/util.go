@@ -17,6 +17,7 @@ package bootstrap
 import (
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/serviceregistry/provider"
+	"istio.io/istio/pkg/cluster"
 	"istio.io/istio/pkg/ledger"
 )
 
@@ -37,4 +38,14 @@ func buildLedger(ca RegistryOptions) ledger.Ledger {
 		result = &model.DisabledLedger{}
 	}
 	return result
+}
+
+func getClusterAliases(clusterAliases map[string]string, clusterID cluster.ID) []cluster.ID {
+	aliases := []cluster.ID{}
+	for alias, id := range clusterAliases {
+		if id == clusterID.String() {
+			aliases = append(aliases, cluster.ID(alias))
+		}
+	}
+	return aliases
 }
